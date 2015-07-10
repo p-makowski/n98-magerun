@@ -28,10 +28,12 @@ class DumpCommand extends AbstractDatabaseCommand
             ->addArgument('filename', InputArgument::OPTIONAL, 'Dump filename')
             ->addOption('add-time', 't', InputOption::VALUE_OPTIONAL, 'Adds time to filename (only if filename was not provided)')
             ->addOption('compression', 'c', InputOption::VALUE_REQUIRED, 'Compress the dump file using one of the supported algorithms')
+            ->addOption('xml', null, InputOption::VALUE_NONE, 'Dump database in xml format')
+            ->addOption('hex-blob', null, InputOption::VALUE_NONE, 'Dump binary columns using hexadecimal notation (for example, "abc" becomes 0x616263)')
             ->addOption('only-command', null, InputOption::VALUE_NONE, 'Print only mysqldump command. Do not execute')
             ->addOption('print-only-filename', null, InputOption::VALUE_NONE, 'Execute and prints no output except the dump filename')
             ->addOption('no-single-transaction', null, InputOption::VALUE_NONE, 'Do not use single-transaction (not recommended, this is blocking)')
-            ->addOption('human-readable', null, InputOption::VALUE_NONE, 'Use a single insert with column names per row. Useful to track database differences, but significantly slows down a later import')
+            ->addOption('human-readable', null, InputOption::VALUE_NONE, 'Use a single insert with column names per row. Useful to track database differences. Use db:import --optimize for speeding up the import.')
             ->addOption('add-routines', null, InputOption::VALUE_NONE, 'Include stored routines in dump (procedures & functions)')
             ->addOption('stdout', null, InputOption::VALUE_NONE, 'Dump to stdout')
             ->addOption('strip', 's', InputOption::VALUE_OPTIONAL, 'Tables to strip (dump only structure of those tables)')
@@ -62,7 +64,8 @@ Available Table Groups:
 
 * @log Log tables
 * @dataflowtemp Temporary tables of the dataflow import/export tool
-* @stripped Standard definition for a stripped dump (logs and dataflow)
+* @importexporttemp Temporary tables of the Import/Export module
+* @stripped Standard definition for a stripped dump (logs, dataflow and importexport)
 * @sales Sales data (orders, invoices, creditmemos etc)
 * @customers Customer data
 * @trade Current trade data (customers and orders). You usally do not want those in developer systems.
@@ -74,7 +77,7 @@ See it in action: http://youtu.be/ttjZHY6vThs
 
 - If you like to prepend a timestamp to the dump name the --add-time option can be used.
 
-- The command comes with a compression function. Add i.e. `--compress=gz` to dump directly in
+- The command comes with a compression function. Add i.e. `--compression=gz` to dump directly in
  gzip compressed file.
 
 HELP;
@@ -206,6 +209,15 @@ HELP;
         if ($input->getOption('add-routines')) {
             $dumpOptions .= '--routines ';
         }
+
+        if($input->getOption('xml')) {
+            $dumpOptions .= '--xml ';
+        }
+
+        if($input->getOption('hex-blob')) {
+            $dumpOptions .= '--hex-blob ';
+        }
+
         $execs = array();
 
         if (!$stripTables) {
@@ -312,7 +324,12 @@ HELP;
     ) {
         $namePrefix    = '';
         $nameSuffix    = '';
-        $nameExtension = '.sql';
+        if($input->getOption('xml')) {
+            $nameExtension = '.xml';
+        } else {
+            $nameExtension = '.sql';
+        }
+
 
         if ($input->getOption('add-time') !== false) {
             $timeStamp = date('Y-m-d_His');

@@ -12,7 +12,7 @@ class OperatingSystem
      */
     public static function isLinux()
     {
-        return stristr(PHP_OS, 'linux');
+        return stristr(self::_getOs(), 'linux');
     }
 
     /**
@@ -23,7 +23,7 @@ class OperatingSystem
      */
     public static function isWindows()
     {
-        return strtolower(substr(PHP_OS, 0, 3)) === 'win';
+        return strtolower(substr(self::_getOs(), 0, 3)) === 'win';
     }
 
     /**
@@ -34,7 +34,7 @@ class OperatingSystem
      */
     public static function isNetware()
     {
-        return stristr(PHP_OS, 'netware');
+        return stristr(self::_getOs(), 'netware');
     }
 
     /**
@@ -45,7 +45,7 @@ class OperatingSystem
      */
     public static function isMacOs()
     {
-        return stristr(PHP_OS, 'darwin') || stristr(PHP_OS, 'mac');
+        return stristr(self::_getOs(), 'darwin') || stristr(self::_getOs(), 'mac');
     }
 
     /**
@@ -54,10 +54,34 @@ class OperatingSystem
      */
     public static function isProgramInstalled($program)
     {
+        if (self::isWindows()) {
+            return WindowsSystem::isProgramInstalled($program);
+        }
+
         $out = null;
         $return = null;
         @exec('which ' . $program, $out, $return);
 
         return $return === 0;
+    }
+
+    /**
+     * @return string
+     */
+    protected static function _getOs()
+    {
+        return PHP_OS;
+    }
+
+    /**
+     * @return string
+     */
+    public static function getHomeDir()
+    {
+        if (self::isWindows()) {
+            return getenv('USERPROFILE');
+        } else {
+            return getenv('HOME');
+        }
     }
 }
